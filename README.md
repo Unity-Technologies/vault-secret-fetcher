@@ -24,6 +24,71 @@ After boostrapping the cluster along the lines of `bootstrap-gke.sh`, the servic
 
 ### Format 1
 
+This format allows for using keys other than 'secret' when setting your values as well as having multiple keys in a secret.
+
+#### Setup
+
+- Secrets can be set in Vault with whatever key names you want.
+
+#### Kubernetes
+
+To use this in your Kubernetes manifest:
+
+```
+spec:
+  restartPolicy: Always
+  initContainers:
+    - name: init-vault-secret-fetcher
+      image: registry2.applifier.info:5005/vault-secret-fetcher:master
+      command:
+        ["sh", "-c", "cp /root/vault-secret-fetcher /opt/secret-fetcher"]
+      imagePullPolicy: IfNotPresent
+      volumeMounts:
+        - name: init-vault-secret-fetcher-volume
+          mountPath: /opt/secret-fetcher
+      env:
+        name: FETCHER_SECRET_FORMAT
+        value: 2
+  containers:
+    - name: my-service
+      image: gcr.io/my-project/my-service
+      command:
+        - "/opt/secret-fetcher/vault-secret-fetcher"
+      args:
+        - "python3"
+        - "-m"
+        - "http.server"
+      env:
+        - name: VAULT_ADDR
+          value: "https://vault.corp"
+        - name: KUBERNETES_CLUSTER
+          valueFrom:
+            configMapKeyRef:
+              name: kubernetes-cluster
+              key: kubernetes-cluster
+        - name: VAULT_ROLE
+          value: default-vault-sa
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: VAULT_SERVICE_ACCOUNT_JWT
+          valueFrom:
+              secretKeyRef:
+                  name: default-vault-sa-secret
+                  key: token
+        - name: TEST_VAULT_ENVVAR
+          value: "VAULTSECRET::{"path":"secret/sre/dev/TEST", "key":"TEST"}"
+      volumeMounts:
+        - mountPath: /opt/secret-fetcher
+          name: init-vault-secret-fetcher-volume
+  volumes:
+    - name: init-vault-secret-fetcher-volume
+      emptyDir: {}
+```
+
+### Format 2
+
 #### Setup
 
 - Secrets should be set in Vault in this manner:
@@ -93,70 +158,6 @@ spec:
       emptyDir: {}
 ```
 
-### Format 2
-
-This format allows for using keys other than 'secret' when setting your values as well as having multiple keys in a secret.
-
-#### Setup
-
-- Secrets can be set in Vault with whatever key names you want.
-
-#### Kubernetes
-
-To use this in your Kubernetes manifest:
-
-```
-spec:
-  restartPolicy: Always
-  initContainers:
-    - name: init-vault-secret-fetcher
-      image: registry2.applifier.info:5005/vault-secret-fetcher:master
-      command:
-        ["sh", "-c", "cp /root/vault-secret-fetcher /opt/secret-fetcher"]
-      imagePullPolicy: IfNotPresent
-      volumeMounts:
-        - name: init-vault-secret-fetcher-volume
-          mountPath: /opt/secret-fetcher
-      env:
-        name: FETCHER_SECRET_FORMAT
-        value: 2
-  containers:
-    - name: my-service
-      image: gcr.io/my-project/my-service
-      command:
-        - "/opt/secret-fetcher/vault-secret-fetcher"
-      args:
-        - "python3"
-        - "-m"
-        - "http.server"
-      env:
-        - name: VAULT_ADDR
-          value: "https://vault.corp"
-        - name: KUBERNETES_CLUSTER
-          valueFrom:
-            configMapKeyRef:
-              name: kubernetes-cluster
-              key: kubernetes-cluster
-        - name: VAULT_ROLE
-          value: default-vault-sa
-        - name: KUBERNETES_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: VAULT_SERVICE_ACCOUNT_JWT
-          valueFrom:
-              secretKeyRef:
-                  name: default-vault-sa-secret
-                  key: token
-        - name: TEST_VAULT_ENVVAR
-          value: "VAULTSECRET::{"path":"secret/sre/dev/TEST", "key":"TEST"}"
-      volumeMounts:
-        - mountPath: /opt/secret-fetcher
-          name: init-vault-secret-fetcher-volume
-  volumes:
-    - name: init-vault-secret-fetcher-volume
-      emptyDir: {}
-```
 
 Regardless of which format you choose the logs in the container should look like something this if everything is working:
 
@@ -194,3 +195,7 @@ If a secret isn't being set the way you expect you can turn on debug logging in 
 - This assumes a proper Vault policy is in place for developer. Ideally, you want something that can be written but no read. An example policy is provided in `example-developer-policy.hcl`.
 
 - This assumes proper logging and log monitoring is in place for Vault.
+
+## Credits
+
+Vault Secret Fetcher was created in late 2017 by Unity Secret Team and the Infrastructure Engineering team. More than half a dozen people contributed to it.
