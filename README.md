@@ -194,3 +194,7 @@ If a secret isn't being set the way you expect you can turn on debug logging in 
 - This assumes a proper Vault policy is in place for developer. Ideally, you want something that can be written but no read. An example policy is provided in `example-developer-policy.hcl`.
 
 - This assumes proper logging and log monitoring is in place for Vault.
+
+## Credits
+
+Vault Secret Fetcher was created in late 2017 by Unity Secret Team and the Infrastructure Engineering team. More than half a dozen people contributed to it.
