@@ -1,6 +1,6 @@
-# Vault Secret Fletcher
+# Vault Secret Fetcher
 
-A utility for automatically fetching secrets from Vault in IE infra. Written in Go and compiled statically to ensure no external dependencies are needed, especially in `scratch` and `distroless` images. This tool's target audience are teams looking to have maximum compatilibty with minimal developer effort in a large infrastructure already deployed in Kubernetes.
+A utility for automatically fetching secrets from [Hashicorp Vault](https://www.vaultproject.io) in a Kubernetes based infrastructure. Written in Go and compiled statically to ensure no external dependencies are needed, especially in `scratch` and `distroless` images. This tool's target audience are teams looking to have maximum compatilibty with minimal developer effort in a large infrastructure already deployed in Kubernetes.
 
 ## How does it work?
 1. Developer writes secrets and configures their services as described in this README.
@@ -39,7 +39,7 @@ spec:
   restartPolicy: Always
   initContainers:
     - name: init-vault-secret-fetcher
-      image: registry2.applifier.info:5005/vault-secret-fetcher:master
+      image: registry/vault-secret-fetcher:master
       command:
         ["sh", "-c", "cp /root/vault-secret-fetcher /opt/secret-fetcher"]
       imagePullPolicy: IfNotPresent
