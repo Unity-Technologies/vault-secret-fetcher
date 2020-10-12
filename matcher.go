@@ -132,7 +132,7 @@ func (m *V1Matcher) Match(str string) (Secret, error) {
 		}
 		message := fmt.Sprintf(
 			"'%s' does not follow the correct path definition format.",
-			envVarLine[1]
+			envVarLine[1],
 		)
 		return nil, NewSecretFormatError(message)
 	}

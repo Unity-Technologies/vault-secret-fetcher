@@ -1,7 +1,7 @@
-FROM golang:1.10.1 as builder
+FROM golang:1.15.2 as builder
 WORKDIR /go/src/vault-secret-fetcher
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags "-X main.build=$(git rev-parse --short HEAD) -extldflags '-static' -s -w" -v -o ./vault-secret-fetcher
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -a -ldflags "-X main.build=$(git rev-parse --short HEAD) -extldflags '-static' -s -w" -v -o ./vault-secret-fetcher
 
 FROM alpine:latest
 WORKDIR /root/
