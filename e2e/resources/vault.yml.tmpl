@@ -1,0 +1,90 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: default-role-tokenreview-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+    - kind: ServiceAccount
+      name: default-vault-sa
+      namespace: default
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default-vault-sa
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: default-vault-sa-secret
+  annotations:
+    kubernetes.io/service-account.name: default-vault-sa
+type: kubernetes.io/service-account-token
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault
+data:
+  init.sh: |
+    #!/bin/sh
+    vault secrets enable --path=secrets kv
+    echo 'path "secrets/*" { capabilities = ["read"] }' | vault policy write app -
+    vault auth enable -path=kubernetes-default kubernetes && \
+    vault write auth/kubernetes-default/config \
+       token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+       kubernetes_host=https://${KUBERNETES_PORT_443_TCP_ADDR}:443 \
+       kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    vault write auth/kubernetes-default/role/default-vault-sa \
+        bound_service_account_names=default-vault-sa \
+        bound_service_account_namespaces=default \
+        policies=app \
+        ttl=1h
+{{- range .Secrets }}
+    vault write {{ .Path }} {{ .Key }}={{ .Value }}
+{{- end }}
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vault
+  labels:
+    app: vault
+spec:
+  containers:
+    - name: vault
+      image: {{ .VaultImage }}
+      args:
+        - 'server'
+        - '-dev'
+      env:
+        - name: VAULT_DEV_ROOT_TOKEN_ID
+          value: vaulttoken
+        - name: VAULT_ADDR
+          value: http://127.0.0.1:8200
+        - name: VAULT_TOKEN
+          value: vaulttoken
+      volumeMounts:
+        - mountPath: /vault-config
+          name: vault
+  volumes:
+    - name: vault
+      configMap:
+        name: vault
+        defaultMode: 0744
+  serviceAccountName: default-vault-sa
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault
+spec:
+  selector:
+    app: vault
+  ports:
+    - port: 8200

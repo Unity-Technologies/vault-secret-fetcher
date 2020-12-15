@@ -1,0 +1,66 @@
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-with-matcher-v1
+data:
+  entrypoint.sh: |
+    #!/bin/sh
+    printenv > /tmp/env
+    sleep 100000
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-with-matcher-v1
+spec:
+  initContainers:
+    - name: init-vault-secret-fetcher
+      image: {{ .PodImage }}
+      command: ['sh', '-c', 'cp /root/vault-secret-fetcher /opt/secret-fetcher/']
+      imagePullPolicy: Never
+      volumeMounts:
+        - name: init-vault-secret-fetcher-volume
+          mountPath: /opt/secret-fetcher
+  containers:
+    - name: app
+      image: "busybox"
+      imagePullPolicy: IfNotPresent
+      command: ["/opt/secret-fetcher/vault-secret-fetcher"]
+      args:
+        - /app/entrypoint.sh
+      volumeMounts:
+        - name: init-vault-secret-fetcher-volume
+          mountPath: /opt/secret-fetcher
+        - mountPath: /app
+          name: app-with-matcher-v1
+      env:
+        - name: VAULT_ADDR
+          value: "http://vault:8200"
+        - name: VAULT_SERVICE_ACCOUNT_JWT
+          valueFrom:
+            secretKeyRef:
+              name: default-vault-sa-secret
+              key: token
+        - name: VAULT_ROLE
+          value: app
+        - name: KUBERNETES_CLUSTER
+          value: "default"
+        - name: ENV
+          value: staging
+{{ range .Secrets }}
+{{ if eq .Version 1 }}
+        - name: {{ .Env }}
+          value: "{{`{{`}}vault-secret {{ .Path }}{{`}}`}}"
+{{ end }}
+{{ end }}
+  restartPolicy: Never
+
+  volumes:
+    - name: init-vault-secret-fetcher-volume
+      emptyDir: {}
+    - name: app-with-matcher-v1
+      configMap:
+        name: app-with-matcher-v1
+        defaultMode: 0744

@@ -13,3 +13,4 @@
 
 # Project-specific ignores
 debug/*
+/.idea/

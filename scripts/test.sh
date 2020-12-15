@@ -1,3 +1,4 @@
 #!/bin/bash
+set -e
 
-echo "Tests are for the weak! (but for real, tests are coming soon)"
+./scripts/run-e2e-tests.sh
