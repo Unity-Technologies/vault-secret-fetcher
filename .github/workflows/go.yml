@@ -7,10 +7,11 @@ on:
     branches: [ master ]
 
 jobs:
-  env:
-    image: vault-secret-fetcher:${GITHUB_SHA}
-    E2E_VAULT_SECRET_FETCHER_IMAGE: $image
   build:
+    env:
+      image: vault-secret-fetcher:${GITHUB_SHA}
+      E2E_VAULT_SECRET_FETCHER_IMAGE: $image
+
     name: Build
     runs-on: ubuntu-latest
     steps:
