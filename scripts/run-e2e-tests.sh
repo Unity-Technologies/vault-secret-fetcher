@@ -2,7 +2,7 @@
 set -e
 
 E2E_VAULT_IMAGE_DEFAULT=vault:1.6.0
-E2E_K8S_KIND_IMAGE_DEFAULT=node:v1.20.0
+E2E_K8S_KIND_IMAGE_DEFAULT=kindest/node:v1.20.0
 
 
 DOCKER_NETWORK_NAME="vault-secret-fetcher-e2e-${identifier:=$(date +%s)}"
