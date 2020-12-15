@@ -1,10 +1,12 @@
 name: Go
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+#on:
+#  push:
+#    branches: [ master ]
+#  pull_request:
+#    branches: [ master ]
+
+on: ["push"]
 
 jobs:
 
@@ -22,7 +24,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Build
-      run: go build -v ./...
+      run: image="vault-secret-fetcher:${GITHUB_SHA}" scripts/build.sh
 
     - name: Test
-      run: go test -v ./...
+      run: E2E_VAULT_SECRET_FETCHER_IMAGE="vault-secret-fetcher:${GITHUB_SHA}" scripts/test.sh
