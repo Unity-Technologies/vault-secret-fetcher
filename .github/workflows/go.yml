@@ -1,4 +1,4 @@
-name: Go
+name: build
 
 on:
   push:
@@ -7,22 +7,16 @@ on:
     branches: [ master ]
 
 jobs:
-
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
 
-    - name: Set up Go 1.x
-      uses: actions/setup-go@v2
-      with:
-        go-version: ^1.13
-
-    - name: Check out code into the Go module directory
+    - name: Check out
       uses: actions/checkout@v2
 
     - name: Build
-      run: go build -v ./...
+      run: image="vault-secret-fetcher:${GITHUB_SHA::8}" scripts/build.sh
 
     - name: Test
-      run: go test -v ./...
+      run: E2E_VAULT_SECRET_FETCHER_IMAGE="vault-secret-fetcher:${GITHUB_SHA::8}" scripts/test.sh
